@@ -1,66 +1,80 @@
+/* eslint-disable camelcase */
 /* eslint-disable react/no-unescaped-entities */
-import React from 'react';
+import React, { useState, FormEvent } from 'react';
 import { FiChevronRight } from 'react-icons/fi';
 import Logo from '../../assets/Logo.svg';
-import { Title, Form, Repositories } from './styles';
+import API from '../../services/api';
+import { Title, Form, Repositories, Error } from './styles';
+
+interface Repository {
+  id: string;
+  name: string;
+  full_name: string;
+  owner: {
+    login: string;
+    avatar_url: string;
+  };
+  description: string;
+}
 
 const Dashboard: React.FC = () => {
+  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [inputError, setInputError] = useState('');
+  const [newRepo, setNewRepo] = useState('');
+
+  const handleAddRepository = async (
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> => {
+    event.preventDefault();
+
+    if (!newRepo) {
+      setInputError('Digite autor/nome do repositório');
+      return;
+    }
+
+    try {
+      const response = await API.get<Repository>(`repos/${newRepo}`);
+
+      const repository = response.data;
+
+      setRepositories([...repositories, repository]);
+
+      setNewRepo('');
+
+      setInputError('');
+    } catch (error) {
+      setInputError('Erro na busca por esse repositório');
+    }
+  };
   return (
     <>
       <img src={Logo} alt="Logo Github" />
       <Title>Explore repositórios no Github</Title>
-      <Form>
-        <input placeholder="Digite o nome do repositório" />
+      <Form onSubmit={handleAddRepository} hasError={!!inputError}>
+        <input
+          value={newRepo}
+          onChange={e => setNewRepo(e.target.value)}
+          placeholder="Digite o nome do repositório"
+        />
         <button type="submit">Pesquisar</button>
       </Form>
 
+      {inputError && <Error>{inputError}</Error>}
+
       <Repositories>
-        <a href="/teste">
-          <img
-            src="https://avatars1.githubusercontent.com/u/43390533?s=460&u=e5b0f692769b4e1145689b4968223aa0cd331ed4&v=4"
-            alt="Felipe Austríaco"
-            srcSet=""
-          />
-          <div>
-            <strong>Felipe Austríaco/weed-app</strong>
-            <p>
-              A fun app with intention of learning and teaching JS's ecosystem
-              to friends. We are currently deciding its purpose. Stack is:
-              NodeJS - Express - MongoDB - React
-            </p>
-          </div>
-          <FiChevronRight size={20} />
-        </a>
-        <a href="/teste">
-          <img
-            src="https://avatars1.githubusercontent.com/u/43390533?s=460&u=e5b0f692769b4e1145689b4968223aa0cd331ed4&v=4"
-            alt="Felipe Austríaco"
-          />
-          <div>
-            <strong>Felipe Austríaco/weed-app</strong>
-            <p>
-              A fun app with intention of learning and teaching JS's ecosystem
-              to friends. We are currently deciding its purpose. Stack is:
-              NodeJS - Express - MongoDB - React
-            </p>
-          </div>
-          <FiChevronRight size={20} />
-        </a>
-        <a href="/teste">
-          <img
-            src="https://avatars1.githubusercontent.com/u/43390533?s=460&u=e5b0f692769b4e1145689b4968223aa0cd331ed4&v=4"
-            alt="Felipe Austríaco"
-          />
-          <div>
-            <strong>Felipe Austríaco/weed-app</strong>
-            <p>
-              A fun app with intention of learning and teaching JS's ecosystem
-              to friends. We are currently deciding its purpose. Stack is:
-              NodeJS - Express - MongoDB - React
-            </p>
-          </div>
-          <FiChevronRight size={20} />
-        </a>
+        {repositories.map(repository => (
+          <a href="/teste" key={repository.id}>
+            <img
+              src={repository.owner.avatar_url}
+              alt={repository.owner.login}
+            />
+            <div>
+              <strong>{repository.full_name}</strong>
+              <p>{repository.description}</p>
+            </div>
+            <FiChevronRight size={20} />
+          </a>
+        ))}
       </Repositories>
     </>
   );
