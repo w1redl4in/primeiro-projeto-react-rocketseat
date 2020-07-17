@@ -1,7 +1,8 @@
 /* eslint-disable camelcase */
 /* eslint-disable react/no-unescaped-entities */
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import { FiChevronRight } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 import Logo from '../../assets/Logo.svg';
 import API from '../../services/api';
 import { Title, Form, Repositories, Error } from './styles';
@@ -18,7 +19,14 @@ interface Repository {
 }
 
 const Dashboard: React.FC = () => {
-  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [repositories, setRepositories] = useState<Repository[]>(() => {
+    const storagedRepositories = localStorage.getItem(
+      '@GithubExplorer:repositories',
+    );
+
+    if (storagedRepositories) return JSON.parse(storagedRepositories);
+    return [];
+  });
   const [inputError, setInputError] = useState('');
   const [newRepo, setNewRepo] = useState('');
 
@@ -46,6 +54,14 @@ const Dashboard: React.FC = () => {
       setInputError('Erro na busca por esse repositório');
     }
   };
+
+  useEffect(() => {
+    localStorage.setItem(
+      '@GithubExplorer:repositories',
+      JSON.stringify(repositories),
+    );
+  }, [repositories]);
+
   return (
     <>
       <img src={Logo} alt="Logo Github" />
@@ -63,7 +79,10 @@ const Dashboard: React.FC = () => {
 
       <Repositories>
         {repositories.map(repository => (
-          <a href="/teste" key={repository.id}>
+          <Link
+            to={`/repositories/${repository.full_name}`}
+            key={repository.id}
+          >
             <img
               src={repository.owner.avatar_url}
               alt={repository.owner.login}
@@ -73,7 +92,7 @@ const Dashboard: React.FC = () => {
               <p>{repository.description}</p>
             </div>
             <FiChevronRight size={20} />
-          </a>
+          </Link>
         ))}
       </Repositories>
     </>
